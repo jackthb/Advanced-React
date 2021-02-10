@@ -4,7 +4,6 @@ import Header from './Header';
 export default function Page({ children, cool }) {
   return (
     <div>
-      <Header></Header>
       <Header />
       <h2>I AM PAGE</h2>
       <h2>HEHE</h2>
