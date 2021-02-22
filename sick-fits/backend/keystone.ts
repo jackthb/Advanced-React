@@ -1,6 +1,14 @@
-import { User } from './schemas/user';
+import { ProductImage } from './schemas/ProductImage';
+import { Product } from './schemas/Products';
+import { User } from './schemas/User';
 import 'dotenv/config';
 import { config, createSchema } from '@keystone-next/keystone/schema';
+import { createAuth } from '@keystone-next/auth';
+import {
+  withItemData,
+  statelessSessions,
+} from '@keystone-next/keystone/session';
+import { insertSeedData } from './seed-data';
 
 const databaseURL =
   process.env.DATABASE_URL ||
@@ -11,24 +19,46 @@ const sessionConfig = {
   secret: process.env.COOKIE_SECRET,
 };
 
-export default config({
-  server: {
-    cors: {
-      origin: [process.env.FRONTEND_URL],
-      credentials: true,
-    },
+const { withAuth } = createAuth({
+  listKey: 'User',
+  identityField: 'email',
+  secretField: 'password',
+  initFirstItem: {
+    fields: ['name', 'email', 'password'],
+    // ADD IN init roles
   },
-  db: {
-    adapter: 'mongoose',
-    url: databaseURL,
-    // data seeiding
-  },
-  lists: createSchema({
-    User,
-    // enter schema items
-  }),
-  ui: {
-    isAccessAllowed: () => true,
-  },
-  // session values
 });
+
+export default withAuth(
+  config({
+    server: {
+      cors: {
+        origin: [process.env.FRONTEND_URL],
+        credentials: true,
+      },
+    },
+    db: {
+      adapter: 'mongoose',
+      url: databaseURL,
+      async onConnect(keystone) {
+        if (process.argv.includes('--seed-data'))
+          await insertSeedData(keystone);
+      },
+    },
+    lists: createSchema({
+      User,
+      Product,
+      ProductImage,
+      // enter schema items
+    }),
+    ui: {
+      isAccessAllowed: ({ session }) => {
+        console.log(session);
+        return !!session?.data;
+      },
+    },
+    session: withItemData(statelessSessions(sessionConfig), {
+      User: `id`,
+    }),
+  })
+);
