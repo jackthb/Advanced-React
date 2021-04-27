@@ -1,9 +1,13 @@
-import { func } from 'prop-types';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function useForm(initial = {}) {
   // create state obj for inputs
   const [inputs, setInputs] = useState(initial);
+  const initialValues = Object.values(initial).join('');
+  useEffect(() => {
+    setInputs(initial);
+    // runs when watched items change
+  }, [initialValues]);
 
   // {
   //   name: 'wes',
